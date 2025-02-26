@@ -1,11 +1,31 @@
 import boto3
+import logging
+from datetime import datetime
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
     rds_client = boto3.client('rds')
     db_instance_identifier = 'database-2'
     
-    response = rds_client.stop_db_instance(
-        DBInstanceIdentifier=db_instance_identifier
-    )
+    try:
+        response = rds_client.stop_db_instance(
+            DBInstanceIdentifier=db_instance_identifier
+        )
+        logger.info(f"RDS instance '{db_instance_identifier}' has been stopped successfully.")
+        
+        # datetimeオブジェクトを文字列に変換
+        response['StoppingTime'] = response['StoppingTime'].strftime('%Y-%m-%dT%H:%M:%S') if 'StoppingTime' in response else None
+
+    except Exception as e:
+        logger.error(f"Error stopping RDS instance '{db_instance_identifier}': {str(e)}")
+        return {
+            'statusCode': 500,
+            'body': f"Error: {str(e)}"
+        }
     
-    return response
+    return {
+        'statusCode': 200,
+        'body': response
+    }
